@@ -13,6 +13,7 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import {
+	type AgentRosterReadPolicy,
 	identityModeManagesFiles,
 	identityModeReadsFiles,
 	loadIdentityMode,
@@ -436,7 +437,7 @@ export function getAllScoredCandidates(
 	project: string | undefined,
 	limit: number,
 	agentId = "default",
-	readPolicy = "isolated",
+	readPolicy: AgentRosterReadPolicy = "isolated",
 	policyGroup: string | null = null,
 ): ScoredMemory[] {
 	return memoryCandidates.getAllScoredCandidates(getMemoryDbPath(), project, limit, agentId, readPolicy, policyGroup);
@@ -448,7 +449,7 @@ function getPredictedContextMemories(
 	charBudget: number,
 	excludeIds: ReadonlySet<string>,
 	agentId: string,
-	readPolicy = "isolated",
+	readPolicy: AgentRosterReadPolicy = "isolated",
 	policyGroup: string | null = null,
 ): ScoredMemory[] {
 	return memoryCandidates.getPredictedContextMemories(
@@ -486,7 +487,7 @@ function loadHooksConfigForHarness(harness: string) {
 function getRecentMemories(
 	limit: number,
 	recencyBias = 0.7,
-	agentScope?: { agentId: string; readPolicy: string; policyGroup: string | null },
+	agentScope?: { agentId: string; readPolicy: AgentRosterReadPolicy; policyGroup: string | null },
 ): Array<{
 	id: string;
 	content: string;

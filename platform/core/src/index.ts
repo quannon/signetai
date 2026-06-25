@@ -159,7 +159,10 @@ export type {
 	RecallRequestOptions,
 	RecallRow,
 	RecallScoreFilterRow,
+	RecallTemporalMeta,
+	RecallTimeOptions,
 	RememberRequestOptions,
+	TemporalFacet,
 } from "./recall";
 export {
 	createMemoriesFts,
