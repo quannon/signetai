@@ -111,6 +111,8 @@ const TS_TEMPORAL_EDGES_VERSION: u32 = 76;
 const TS_TEMPORAL_EDGES_NAME: &str = "temporal-edges";
 const TS_DOCUMENT_SCOPE_COLUMNS_VERSION: u32 = 80;
 const TS_DOCUMENT_SCOPE_COLUMNS_NAME: &str = "document-scope-columns";
+const TS_LEGACY_MARKDOWN_IMPORT_STATE_VERSION: u32 = 81;
+const TS_LEGACY_MARKDOWN_IMPORT_STATE_NAME: &str = "legacy-markdown-import-state";
 
 /// Simple checksum matching the TS implementation (hash of "version:name").
 fn checksum(version: u32, name: &str) -> String {
@@ -562,7 +564,37 @@ fn ensure_cross_daemon_parity_tables(conn: &Connection) -> Result<(), CoreError>
             updated_at TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_os_widgets_status
-            ON os_widgets(status, updated_at DESC);",
+            ON os_widgets(status, updated_at DESC);
+
+        CREATE TABLE IF NOT EXISTS legacy_markdown_imports (
+            path TEXT PRIMARY KEY,
+            mtime_ms INTEGER NOT NULL,
+            ctime_ms INTEGER NOT NULL,
+            size INTEGER NOT NULL,
+            content_hash TEXT NOT NULL,
+            importer_version INTEGER NOT NULL,
+            chunk_count INTEGER NOT NULL DEFAULT 0,
+            last_imported_at TEXT NOT NULL,
+            last_seen_at TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'imported'
+                CHECK(status IN ('imported', 'empty', 'failed')),
+            error TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS legacy_markdown_chunks (
+            file_path TEXT NOT NULL,
+            chunk_hash TEXT NOT NULL,
+            chunk_index INTEGER NOT NULL,
+            memory_id TEXT,
+            source_id TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (file_path, chunk_hash),
+            FOREIGN KEY (file_path) REFERENCES legacy_markdown_imports(path) ON DELETE CASCADE,
+            FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE SET NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_legacy_markdown_chunks_memory
+            ON legacy_markdown_chunks(memory_id);",
     )?;
 
     // Stamp all TS migration versions whose artifacts are already present in a
@@ -727,6 +759,11 @@ fn ensure_cross_daemon_parity_tables(conn: &Connection) -> Result<(), CoreError>
         TS_ARTIFACT_SOURCE_PROVENANCE_NAME,
     )?;
     stamp_typescript_parity_migration(conn, TS_TEMPORAL_EDGES_VERSION, TS_TEMPORAL_EDGES_NAME)?;
+    stamp_typescript_parity_migration(
+        conn,
+        TS_LEGACY_MARKDOWN_IMPORT_STATE_VERSION,
+        TS_LEGACY_MARKDOWN_IMPORT_STATE_NAME,
+    )?;
     Ok(())
 }
 
